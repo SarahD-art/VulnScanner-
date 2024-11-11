@@ -1,17 +1,6 @@
 import socket
-import threading
 from concurrent.futures import ThreadPoolExecutor
 
-# A simple function to simulate vulnerability checks (placeholder)
-def check_vulnerabilities(port, host):
-    """Placeholder for vulnerability checking. In real use, you would integrate vulnerability scanning tools here."""
-    print(f"Checking vulnerabilities on port {port}...")
-    # Simulate vulnerability check (e.g., using nmap or other scanning tools)
-    if port == 80:  # Simulate HTTP service vulnerability check
-        print(f"Warning: Potential vulnerability on HTTP service (port {port}) at {host}")
-    elif port == 443:  # Simulate HTTPS service vulnerability check
-        print(f"Warning: Potential vulnerability on HTTPS service (port {port}) at {host}")
-    # You can add more vulnerability checks based on port or service.
 
 def check_port(host, port, timeout=1):
     """Check if a specific port on a host is open."""
@@ -24,20 +13,46 @@ def check_port(host, port, timeout=1):
     except (socket.timeout, socket.error):  # Handle both socket error and timeout exceptions
         return False
 
-def scan_port(host, port):
-    """Wrapper function to scan port and print result, then check for vulnerabilities if open."""
+
+def check_vulnerabilities(port, host):
+    """Simulate vulnerability checks for open ports."""
+    # In a real implementation, you might call `nmap` or check service versions here.
+    print(f"Checking vulnerabilities on port {port} of {host}...")
+    if port == 80:
+        return "Potential HTTP vulnerability detected."
+    elif port == 443:
+        return "Potential HTTPS vulnerability detected."
+    elif port == 22:
+        return "SSH service - check for weak passwords."
+    # Add more conditions as needed based on port/service
+    return "No vulnerabilities detected."
+
+
+def scan_port(host, port, save_to_file=False):
+    """Scan a port, check vulnerabilities, and print/save result."""
     is_open = check_port(host, port)
+    status = "open" if is_open else "closed"
+
+    result = f"Port {port} is {status} on {host}"
+
     if is_open:
-        print(f"Port {port} is open on {host}.")
-        check_vulnerabilities(port, host)
-    else:
-        print(f"Port {port} is closed on {host}.")
+        vuln = check_vulnerabilities(port, host)
+        result += f"\n    {vuln}"
+
+    print(result)
+
+    # Save results to a file if specified
+    if save_to_file:
+        with open('output.txt', 'a') as f:
+            f.write(result + "\n\n")
+
 
 def main():
-    # Input host and range of ports
-    host = input("Enter the host to check (e.g., localhost or IP): ")
+    # Input for hosts and port range
+    hosts_input = input("Enter the hosts to check (comma-separated): ")
+    hosts = [host.strip() for host in hosts_input.split(",")]
+
     port_range_input = input("Enter port range to check (e.g., 1-1000): ")
-    timeout = int(input("Enter timeout in seconds (default 1s): ") or 1)
 
     # Parse port range
     try:
@@ -51,11 +66,15 @@ def main():
         print("Invalid port range. Port numbers must be between 1 and 65535.")
         return
 
-    # Use ThreadPoolExecutor to handle threading more efficiently
-    with ThreadPoolExecutor(max_workers=(end_port - start_port + 1)) as executor:
-        # Submit tasks for each port in the range to scan concurrently
-        for port in range(start_port, end_port + 1):
-            executor.submit(scan_port, host, port)
+    # Ask if the user wants to save results to a file
+    save_to_file = input("Would you like to save the results to a file? (y/n): ").lower() == 'y'
+
+    # Use ThreadPoolExecutor to scan ports concurrently
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        for host in hosts:
+            for port in range(start_port, end_port + 1):
+                executor.submit(scan_port, host, port, save_to_file)
+
 
 if __name__ == "__main__":
     main()
