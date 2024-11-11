@@ -1,1 +1,1 @@
-# VulnScanner-
+VulnScanner-This project is a simple Python script for scanning a range of ports on a given host (IP address or domain). It checks whether each port in the specified range is open or closed and prints the results. The script is designed to run efficiently using concurrent threading to scan multiple ports simultaneously.
